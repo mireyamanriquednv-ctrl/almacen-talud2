@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Almacén – Control de Materiales | Talud</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4f8;min-height:100vh}
+:root{
+  --blue:#1e3a5f;--blue-mid:#2563a8;--blue-light:#dbeafe;
+  --green:#166534;--green-bg:#dcfce7;
+  --red:#dc2626;--red-dark:#991b1b;--red-bg:#fee2e2;
+  --amber:#92400e;--amber-bg:#fef3c7;
+  --gray:#374151;--gray2:#6b7280;--gray-light:#f9fafb;
+  --border:#e5e7eb;--radius:10px
+}
+.app{max-width:500px;margin:0 auto;background:#fff;min-height:100vh;display:flex;flex-direction:column}
+.hdr{background:var(--blue);color:#fff;padding:16px 18px 14px}
+.hdr-row{display:flex;align-items:center;gap:10px}
+.hdr-icon{width:38px;height:38px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.hdr h1{font-size:16px;font-weight:700;line-height:1.2}
+.hdr p{font-size:11px;opacity:.7;margin-top:2px}
+.badge{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.18);color:#fff;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;margin-left:auto;white-space:nowrap;cursor:pointer}
+.badge:hover{background:rgba(255,255,255,.28)}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;background:#fff;border-bottom:1.5px solid var(--border);position:sticky;top:0;z-index:10}
+.tab{padding:11px 4px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;color:#9ca3af;transition:all .18s;text-transform:uppercase;letter-spacing:.4px}
+.tab.active-e{color:var(--blue-mid);border-color:var(--blue-mid);background:#f0f7ff}
+.tab.active-s{color:var(--red);border-color:var(--red);background:#fff5f5}
+.tab.active-r{color:var(--green);border-color:var(--green);background:#f0fdf4}
+.panel{padding:18px;display:flex;flex-direction:column}
+.panel.hidden{display:none}
+.slabel{font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px;margin-top:18px}
+.slabel:first-child{margin-top:0}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:13px;font-weight:500;color:var(--gray);margin-bottom:4px}
+.req{color:var(--red);margin-left:1px}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
+  width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);
+  font-size:14px;color:var(--gray);background:#fff;outline:none;transition:border .15s;
+  -webkit-appearance:none;font-family:inherit
+}
+input:focus,select:focus,textarea:focus{border-color:var(--blue-mid);box-shadow:0 0 0 3px rgba(37,99,168,.1)}
+input[readonly]{background:#f3f4f6;color:#9ca3af}
+input:disabled,select:disabled{background:#f3f4f6;color:#9ca3af;cursor:not-allowed;opacity:.7}
+textarea{resize:vertical;min-height:68px}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239ca3af' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.mat-wrap{position:relative}
+.mat-wrap .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+.mat-wrap input{padding-left:34px}
+.mat-drop{max-height:210px;overflow-y:auto;border:1.5px solid var(--blue-mid);border-top:none;border-radius:0 0 var(--radius) var(--radius);background:#fff;display:none;position:absolute;width:100%;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.mat-drop.open{display:block}
+.mat-item{padding:9px 12px;cursor:pointer;border-bottom:1px solid #f3f4f6;transition:background .1s}
+.mat-item:hover{background:#f0f7ff}
+.mat-item:last-child{border-bottom:none}
+.mat-code{font-size:11px;color:var(--blue-mid);font-weight:700;font-family:monospace}
+.mat-name{font-size:13px;color:var(--gray);margin-top:1px}
+.mat-cat{font-size:11px;color:#9ca3af}
+.mat-sel{background:var(--blue-light);border:1.5px solid var(--blue-mid);border-radius:var(--radius);padding:9px 12px;display:none;align-items:center;gap:9px;margin-top:5px}
+.mat-sel.show{display:flex}
+.mat-badge{background:var(--blue-mid);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;font-family:monospace;white-space:nowrap}
+.mat-info{flex:1;min-width:0}
+.mat-nm{font-size:13px;font-weight:500;color:var(--blue);line-height:1.3}
+.mat-un{font-size:11px;color:#6b7280;margin-top:1px}
+.clear-btn{background:none;border:none;color:#9ca3af;cursor:pointer;font-size:17px;padding:3px 6px;border-radius:4px;line-height:1}
+.clear-btn:hover{color:var(--red);background:var(--red-bg)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.err{font-size:11px;color:var(--red);margin-top:3px;display:none}
+.err.show{display:block}
+.ferr{border-color:var(--red)!important;background:#fff8f8!important}
+.btn{width:100%;padding:13px;color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px}
+.btn-e{background:var(--blue-mid)}.btn-e:hover{background:var(--blue);transform:translateY(-1px)}
+.btn-s{background:var(--red)}.btn-s:hover{background:var(--red-dark);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)!important}
+.note{font-size:11px;color:#9ca3af;text-align:center;margin-top:8px}
+.reg-hdr{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.reg-hdr h2{font-size:15px;font-weight:700;color:var(--gray);flex:1}
+.btn-exp{padding:7px 14px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-exp:hover{opacity:.88}
+.empty{text-align:center;padding:32px 0;color:#9ca3af;font-size:14px;line-height:1.8}
+.reg-card{border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;margin-bottom:9px;background:#fff}
+.reg-card.E{border-left:4px solid var(--blue-mid)}
+.reg-card.S{border-left:4px solid var(--red)}
+.reg-top{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.reg-tipo{font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;letter-spacing:.5px}
+.reg-tipo.E{background:var(--blue-light);color:var(--blue-mid)}
+.reg-tipo.S{background:var(--red-bg);color:var(--red)}
+.reg-fecha{font-size:11px;color:#9ca3af;margin-left:auto}
+.reg-mat{font-size:13px;font-weight:600;color:var(--gray);margin-bottom:3px}
+.reg-cod{font-size:11px;color:var(--blue-mid);font-family:monospace;margin-right:6px}
+.reg-details{font-size:11px;color:#6b7280;line-height:1.8}
+.reg-details b{color:var(--gray);font-weight:600}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:16px;padding:26px 22px;width:100%;max-width:360px;text-align:center}
+.modal-ico{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px}
+.modal-ico.e{background:var(--blue-light)}
+.modal-ico.s{background:var(--red-bg)}
+.modal h2{font-size:17px;font-weight:700;color:var(--gray);margin-bottom:6px}
+.modal p{font-size:13px;color:#6b7280;margin-bottom:16px;line-height:1.6}
+.sumbox{background:#f9fafb;border-radius:var(--radius);padding:11px;text-align:left;margin-bottom:18px;font-size:12px;line-height:1.85;color:var(--gray)}
+.sumbox b{font-weight:600}
+.btn-nuevo{width:100%;padding:12px;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;border:2px solid var(--blue-mid);color:var(--blue-mid);background:#fff;margin-bottom:9px;transition:all .15s}
+.btn-nuevo:hover{background:var(--blue-light)}
+.info-box{background:#f0f7ff;border:1px solid #bfdbfe;border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;font-size:12px;color:#1e3a5f;line-height:1.7}
+.info-box b{font-weight:700}
+.aprov-box{display:flex;align-items:flex-start;gap:11px;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:var(--radius);padding:12px 14px;margin-bottom:14px}
+.aprov-icon{font-size:22px;flex-shrink:0;margin-top:1px}
+.aprov-txt{font-size:12px;color:#78350f;line-height:1.7}
+.aprov-txt b{font-weight:700;color:#92400e}
+.vale-ok{display:flex;align-items:center;gap:8px;background:#dcfce7;border:1.5px solid #16a34a;border-radius:var(--radius);padding:10px 13px;font-size:12px;font-weight:600;color:#166534;margin-top:6px;margin-bottom:4px}
+.vale-ok.hidden{display:none}
+.otro-mat-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#fff;border:1.5px dashed #9ca3af;border-radius:var(--radius);font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;transition:all .15s;margin-top:-6px}
+.otro-mat-btn:hover{border-color:var(--amber);color:var(--amber);background:#fffbeb}
+.otro-mat-cancel{font-size:12px;color:#dc2626;cursor:pointer;padding:6px 0;font-weight:500}
+.otro-mat-cancel:hover{text-decoration:underline}
+.xor-box{display:flex;align-items:flex-start;gap:8px;margin-bottom:14px}
+.xor-col{flex:1;min-width:0}
+.xor-col input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--gray);background:#fff;outline:none;transition:border .15s}
+.xor-col input:focus{border-color:var(--blue-mid);box-shadow:0 0 0 3px rgba(37,99,168,.1)}
+.xor-col input:disabled{background:#f3f4f6;color:#9ca3af;cursor:not-allowed;border-style:dashed}
+.xor-label{display:block;font-size:12px;font-weight:600;color:var(--gray);margin-bottom:5px}
+.xor-label.dim{color:#9ca3af}
+.xor-sep{font-size:12px;font-weight:700;color:#9ca3af;margin-top:30px;flex-shrink:0}
+.xor-origen-box{display:flex;align-items:flex-start;gap:8px;margin-bottom:14px}
+.xor-origen-col{flex:1;min-width:0}
+.xor-origen-col select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--gray);background:#fff;outline:none;transition:border .15s;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239ca3af' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.xor-origen-col select:disabled{background-color:#f3f4f6;color:#9ca3af;cursor:not-allowed;border-style:dashed}
+.xor-origen-col select:focus{border-color:var(--blue-mid);box-shadow:0 0 0 3px rgba(37,99,168,.1)}
+.xor-label.dim{color:#9ca3af}
+.cascade-hint{font-size:11px;color:#9ca3af;margin-top:3px;font-style:italic}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <div class="hdr-row">
+      <div class="hdr-icon">🏗️</div>
+      <div>
+        <h1>Control de Almacén</h1>
+        <p>Sostenimiento y Mantenimiento de Talud</p>
+      </div>
+      <div class="badge" id="badgeCount" onclick="goTab('r')">0 registros</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active-e" id="te" onclick="goTab('e')">⬇ Entrada</div>
+    <div class="tab" id="ts" onclick="goTab('s')">⬆ Salida</div>
+    <div class="tab" id="tr" onclick="goTab('r')">📋 Registros</div>
+  </div>
+
+  <!-- ══ PANEL ENTRADA ══ -->
+  <div class="panel" id="pE">
+    <div class="info-box" id="syncStatusBox">
+      <b id="syncStatusIcon">🔄</b> <span id="syncStatusTxt">Conectando con Google Sheets…</span>
+    </div>
+
+    <div class="slabel">Fecha y hora</div>
+    <div class="row2">
+      <div class="field" style="margin:0"><input type="date" id="eFecha"/></div>
+      <div class="field" style="margin:0"><input type="time" id="eHora"/></div>
+    </div>
+
+    <div class="slabel">Materiales</div>
+    <div class="field">
+      <label>Buscar material <span class="req">*</span></label>
+      <div class="mat-wrap" id="mwE">
+        <span class="ico">🔍</span>
+        <input type="text" id="eMatSearch" placeholder="Código o nombre…" autocomplete="off"
+          oninput="filterMat('e')" onfocus="openDrop('e')"/>
+        <div class="mat-drop" id="eMatDrop"></div>
+      </div>
+      <div class="mat-sel" id="eMatSel">
+        <span class="mat-badge" id="eSelCode"></span>
+        <div class="mat-info">
+          <div class="mat-nm" id="eSelName"></div>
+          <div class="mat-un" id="eSelUnit"></div>
+        </div>
+        <button class="clear-btn" onclick="clearMat('e')">✕</button>
+      </div>
+      <div class="err" id="eErrMat">Agrega al menos un material.</div>
+    </div>
+    <div class="field" id="eMatManualToggleWrap">
+      <div class="otro-mat-btn" onclick="toggleMatManual('e')" id="eMatManualBtn">✏ Ingresar material manualmente (no está en el catálogo)</div>
+    </div>
+    <div id="eMatManualWrap" style="display:none">
+      <div class="field">
+        <label>Nombre del material <span class="req">*</span></label>
+        <input type="text" id="eMatManualName" placeholder="Ej: PERNO ESPECIAL D40MM"/>
+        <div class="err" id="eErrManualName">Ingresa el nombre del material.</div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Código / Abrev.</label>
+          <input type="text" id="eMatManualCode" placeholder="Ej: ESP-001"/>
+        </div>
+        <div class="field">
+          <label>Unidad <span class="req">*</span></label>
+          <input type="text" id="eMatManualUnit" placeholder="UND / ML / M2"/>
+          <div class="err" id="eErrManualUnit">Ingresa la unidad.</div>
+        </div>
+      </div>
+      <div class="otro-mat-cancel" onclick="cancelMatManual('e')">✕ Cancelar — volver al buscador</div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Cantidad <span class="req">*</span></label>
+        <input type="number" id="eCant" min="0.01" step="0.01" placeholder="0"/>
+        <div class="err" id="eErrCant">Cantidad inválida.</div>
+      </div>
+      <div class="field">
+        <label>Unidad</label>
+        <input type="text" id="eUnidad" readonly placeholder="—"/>
+      </div>
+    </div>
+    <div class="slabel">Documento de ingreso <span style="font-weight:400;color:#6b7280;font-size:10px;text-transform:none">— Guía de Remisión O Vale (uno de los dos)</span></div>
+    <div class="xor-box">
+      <div class="xor-col">
+        <label class="xor-label" id="eDocLabel">📄 Guía de Remisión / OC</label>
+        <input type="text" id="eDoc" placeholder="Ej: GR-2025-0432" oninput="xorDocVale('doc')"/>
+        <div class="err" id="eErrDoc">Ingresa guía o vale.</div>
+      </div>
+      <div class="xor-sep">ó</div>
+      <div class="xor-col">
+        <label class="xor-label" id="eValeLabel">🔏 N° de Vale autorizado</label>
+        <input type="text" id="eVale" placeholder="Ej: VALE-001" style="font-family:monospace;font-weight:600"
+          oninput="xorDocVale('vale');checkValeE()"/>
+        <div class="err" id="eErrVale">Ingresa guía o vale.</div>
+      </div>
+    </div>
+    <div class="vale-ok hidden" id="valeOkE">
+      <span>✅</span> <span id="valeOkETxt">Vale ingresado — verifica que coincida con el documento físico.</span>
+    </div>
+    <div class="slabel">Origen <span style="font-weight:400;color:#6b7280;font-size:10px;text-transform:none">— Procedencia O Área/Sector/Frente (uno de los dos)</span></div>
+    <div class="err" id="eErrOrigen" style="margin-bottom:8px">Selecciona procedencia o área/sector/frente.</div>
+
+    <div class="xor-origen-box">
+      <!-- Columna izquierda: Procedencia -->
+      <div class="xor-origen-col" id="eProcCol">
+        <label class="xor-label" id="eProcLabel">📍 Procedencia</label>
+        <select id="eProcedencia" onchange="xorOrigen('proc')">
+          <option value="">— Seleccionar —</option>
+          <option>Lima</option>
+          <option>Moquegua</option>
+          <option>Arequipa</option>
+          <option>Almacén Central</option>
+          <option>Almacen Moquegua</option>
+          <option>CPF</option>
+          <option>Almacen MOQ</option>
+          <option>Almacen Obra</option>
+          <option>Otro</option>
+        </select>
+      </div>
+
+      <div class="xor-sep" style="margin-top:22px">ó</div>
+
+      <!-- Columna derecha: Área/Sector/Frente -->
+      <div class="xor-origen-col" id="eUbicCol">
+        <label class="xor-label" id="eUbicLabel">📌 Área / Sector / Frente</label>
+        <select id="eArea" onchange="xorOrigen('ubic');updateESectores()" style="margin-bottom:6px">
+          <option value="">— Área —</option>
+          <option>1000</option>
+          <option>2000</option>
+          <option>3000</option>
+          <option>4000</option>
+          <option>5800</option>
+        </select>
+        <select id="eSector" onchange="updateEFrentes()" disabled style="margin-bottom:6px">
+          <option value="">— Sector —</option>
+        </select>
+        <select id="eFrente" disabled>
+          <option value="">— Frente —</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Recibido por <span class="req">*</span></label>
+      <select id="eRecib">
+        <option value="">— Seleccionar almacenero —</option>
+        <option>Luis Vidal</option>
+        <option>Donato Catacora</option>
+      </select>
+      <div class="err" id="eErrRecib">Selecciona quién recibió.</div>
+    </div>
+
+    <div class="slabel">✅ Autorizado por</div>
+    <div class="field">
+      <label>Autorizado por <span class="req">*</span></label>
+      <select id="eAutorizado" onchange="toggleOtroAutE()">
+        <option value="">— Seleccionar responsable —</option>
+        <option>Renato Salas Valencia - Ing. Residente</option>
+        <option>Alfredo Edmundo Iparraguirre - Ing. Residente</option>
+        <option>Marisela Tala Flores - Ing. Planeamiento</option>
+        <option>Mireya Manrique Valverde - Ing. Planeamiento</option>
+        <option>Gladys Ramos Anccota - Ing. Planeamiento junior</option>
+        <option value="__eautotro__">✏ Otro (ingresar manualmente)…</option>
+      </select>
+      <div class="field" id="eOtroAutWrap" style="display:none;margin-top:8px">
+        <input type="text" id="eOtroAut" placeholder="Escribe el nombre del responsable"/>
+      </div>
+      <div class="err" id="eErrAut">Ingresa quién autorizó.</div>
+    </div>
+    <div class="vale-ok hidden" id="valeOkE">
+      <span>✅</span> <span id="valeOkETxt">Vale ingresado — verifica que coincida con el documento físico.</span>
+    </div>
+
+    <div class="slabel">Observaciones</div>
+    <div class="field">
+      <textarea id="eObs" placeholder="Condición del material, notas…"></textarea>
+    </div>
+
+    <button class="btn btn-e" onclick="submit('e')">✔ Registrar Entrada</button>
+    <p class="note">Campos con <span style="color:var(--red)">*</span> son obligatorios</p>
+  </div>
+
+  <!-- ══ PANEL SALIDA ══ -->
+  <div class="panel hidden" id="pS">
+
+    <div class="slabel">Fecha y hora</div>
+    <div class="row2">
+      <div class="field" style="margin:0"><input type="date" id="sFecha"/></div>
+      <div class="field" style="margin:0"><input type="time" id="sHora"/></div>
+    </div>
+
+    <div class="slabel">Materiales</div>
+    <div class="field">
+      <label>Buscar material <span class="req">*</span></label>
+      <div class="mat-wrap" id="mwS">
+        <span class="ico">🔍</span>
+        <input type="text" id="sMatSearch" placeholder="Código o nombre…" autocomplete="off"
+          oninput="filterMat('s')" onfocus="openDrop('s')"/>
+        <div class="mat-drop" id="sMatDrop"></div>
+      </div>
+      <div class="mat-sel" id="sMatSel">
+        <span class="mat-badge" id="sSelCode"></span>
+        <div class="mat-info">
+          <div class="mat-nm" id="sSelName"></div>
+          <div class="mat-un" id="sSelUnit"></div>
+        </div>
+        <button class="clear-btn" onclick="clearMat('s')">✕</button>
+      </div>
+      <div class="err" id="sErrMat">Agrega al menos un material.</div>
+    </div>
+    <div class="field" id="sMatManualToggleWrap">
+      <div class="otro-mat-btn" onclick="toggleMatManual('s')" id="sMatManualBtn">✏ Ingresar material manualmente (no está en el catálogo)</div>
+    </div>
+    <div id="sMatManualWrap" style="display:none">
+      <div class="field">
+        <label>Nombre del material <span class="req">*</span></label>
+        <input type="text" id="sMatManualName" placeholder="Ej: PERNO ESPECIAL D40MM"/>
+        <div class="err" id="sErrManualName">Ingresa el nombre del material.</div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Código / Abrev.</label>
+          <input type="text" id="sMatManualCode" placeholder="Ej: ESP-001"/>
+        </div>
+        <div class="field">
+          <label>Unidad <span class="req">*</span></label>
+          <input type="text" id="sMatManualUnit" placeholder="UND / ML / M2"/>
+          <div class="err" id="sErrManualUnit">Ingresa la unidad.</div>
+        </div>
+      </div>
+      <div class="otro-mat-cancel" onclick="cancelMatManual('s')">✕ Cancelar — volver al buscador</div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Cantidad <span class="req">*</span></label>
+        <input type="number" id="sCant" min="0.01" step="0.01" placeholder="0"/>
+        <div class="err" id="sErrCant">Cantidad inválida.</div>
+      </div>
+      <div class="field">
+        <label>Unidad</label>
+        <input type="text" id="sUnidad" readonly placeholder="—"/>
+      </div>
+    </div>
+    <div class="slabel">Destino — Área / Sector / Frente</div>
+    <div class="field">
+      <label>Área <span class="req">*</span></label>
+      <select id="sArea" onchange="updateSectores()">
+        <option value="">— Seleccionar área —</option>
+        <option>1000</option>
+        <option>2000</option>
+        <option>3000</option>
+        <option>4000</option>
+        <option>5800</option>
+      </select>
+      <div class="err" id="sErrArea">Selecciona el área.</div>
+    </div>
+    <div class="field">
+      <label>Sector <span class="req">*</span></label>
+      <select id="sSector" onchange="updateFrentes()" disabled>
+        <option value="">— Primero selecciona un área —</option>
+      </select>
+      <div class="cascade-hint" id="hintSector">Selecciona un área para ver los sectores disponibles.</div>
+      <div class="err" id="sErrSector">Selecciona el sector.</div>
+    </div>
+    <div class="field">
+      <label>Frente <span class="req">*</span></label>
+      <select id="sFrente" disabled>
+        <option value="">— Primero selecciona un sector —</option>
+      </select>
+      <div class="cascade-hint" id="hintFrente">Selecciona un sector para ver los frentes disponibles.</div>
+      <div class="err" id="sErrFrente">Selecciona el frente.</div>
+    </div>
+
+    <div class="slabel">Responsables</div>
+    <div class="field">
+      <label>Solicitado por <span class="req">*</span></label>
+      <select id="sSolic" onchange="toggleOtroSolic()">
+        <option value="">— Seleccionar solicitante —</option>
+        <option>Yeampier Pariente Quenta – Ing. Supervisor</option>
+        <option>Bryan Alexis Ventura Herreros – Ing. Supervisor</option>
+        <option>Angela Arroyo Cuayla Gloria – Ing. Supervisor</option>
+        <option>David Elard Ganampa Medina – Ing. Supervisor</option>
+        <option>Angel Aaron Cespedes Campos – Ing. Supervisor</option>
+        <option value="__otro__">✏ Otro (ingresar manualmente)…</option>
+      </select>
+      <div class="field" id="sOtroSolicWrap" style="display:none;margin-top:8px">
+        <input type="text" id="sOtroSolic" placeholder="Escribe el nombre del solicitante"/>
+      </div>
+      <div class="err" id="sErrSolic">Ingresa quién solicitó.</div>
+    </div>
+    <div class="field">
+      <label>Entregado por (almacenero)</label>
+      <select id="sEntreg">
+        <option value="">— Seleccionar almacenero —</option>
+        <option>Luis Vidal</option>
+        <option>Donato Catacora</option>
+      </select>
+    </div>
+
+    <div class="slabel">✅ Autorización</div>
+    <div class="aprov-box">
+      <div class="aprov-icon">📋</div>
+      <div class="aprov-txt">
+        <b>Antes de despachar</b>, el responsable debe firmar un vale físico y asignarle un número.
+        Ingresa ese número aquí para habilitar el registro.
+      </div>
+    </div>
+    <div class="field">
+      <label>N° de Vale autorizado <span class="req">*</span></label>
+      <div style="position:relative">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">🔏</span>
+        <input type="text" id="sVale" placeholder="Ej: VALE-001 / VA-2025-0032"
+          style="padding-left:34px;font-family:monospace;font-weight:600;letter-spacing:.5px" oninput="checkVale()"/>
+      </div>
+      <div class="err" id="sErrVale">Ingresa el N° de vale autorizado.</div>
+    </div>
+    <div class="field">
+      <label>Autorizado por <span class="req">*</span></label>
+      <select id="sAutorizado" onchange="toggleOtroAut()">
+        <option value="">— Seleccionar responsable —</option>
+        <option>Renato Salas Valencia - Ing. Residente</option>
+        <option>Alfredo Edmundo Iparraguirre - Ing. Residente</option>
+        <option>Marisela Tala Flores - Ing. Planeamiento</option>
+        <option>Mireya Manrique Valverde - Ing. Planeamiento</option>
+        <option>Gladys Ramos Anccota - Ing. Planeamiento junior</option>
+        <option value="__autotro__">✏ Otro (ingresar manualmente)…</option>
+      </select>
+      <div class="field" id="sOtroAutWrap" style="display:none;margin-top:8px">
+        <input type="text" id="sOtroAut" placeholder="Escribe el nombre del responsable"/>
+      </div>
+      <div class="err" id="sErrAut">Ingresa quién autorizó.</div>
+    </div>
+    <div class="vale-ok hidden" id="valeOk">
+      <span>✅</span> <span id="valeOkTxt">Vale ingresado — verifica que coincida con el documento físico.</span>
+    </div>
+
+    <div class="slabel">Observaciones</div>
+    <div class="field">
+      <textarea id="sObs" placeholder="Notas adicionales…"></textarea>
+    </div>
+
+    <button class="btn btn-s" onclick="submit('s')">✔ Registrar Salida</button>
+    <p class="note">Campos con <span style="color:var(--red)">*</span> son obligatorios</p>
+  </div>
+
+  <!-- ══ PANEL REGISTROS ══ -->
+  <div class="panel hidden" id="pR">
+    <div class="reg-hdr">
+      <h2 id="regTitle">Movimientos</h2>
+      <button class="btn-exp" onclick="exportCSV()">⬇ Exportar CSV</button>
+    </div>
+    <div id="diagBox" style="background:#fffbeb;border:1px solid #f59e0b;border-radius:10px;padding:10px 13px;font-size:11px;color:#78350f;margin-bottom:12px;line-height:1.8">
+      <b>🔍 Estado:</b> <span id="diagText">Verificando…</span>
+    </div>
+    <div id="regList"></div>
+  </div>
+</div>
+
+<!-- Modal éxito -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-ico" id="mIco"></div>
+    <h2 id="mTitle"></h2>
+    <p id="mSub"></p>
+    <div class="sumbox" id="mSum"></div>
+    <button class="btn-nuevo" onclick="closeModal()">+ Nuevo registro</button>
+  </div>
+</div>
+
+<script>
+// ── Catálogo de materiales ──────────────────────────────────
+const MATS=[
+  {code:"T65.4",name:"MALLA TECCO G65/4",cat:"MALLA",unit:"M2"},
+  {code:"D80.2",name:"MALLA DELTAX G80/2",cat:"MALLA",unit:"M2"},
+  {code:"GEO",name:"GEOMALLA",cat:"MALLA",unit:"M2"},
+  {code:"M80.4",name:"MALLA MINAX 80/4",cat:"MALLA",unit:"M2"},
+  {code:"M80.3",name:"MALLA MINAX 80/3",cat:"MALLA",unit:"M2"},
+  {code:"T65.3",name:"MALLA TECCO G65/3",cat:"MALLA",unit:"M2"},
+  {code:"GBE.500.3M",name:"BARRERA GBE-500A H=3m",cat:"BARRERA",unit:"ML"},
+  {code:"GBE.500.4M",name:"BARRERA GBE-500A H=4m",cat:"BARRERA",unit:"ML"},
+  {code:"GBE.1000.4M",name:"BARRERA GBE-1000 H=4M",cat:"BARRERA",unit:"ML"},
+  {code:"PERNO.B25",name:"BARRA HELICOIDAL D25MM",cat:"PERNOS",unit:"ML"},
+  {code:"PERNO.B32",name:"BARRA HELICOIDAL D32MM",cat:"PERNOS",unit:"ML"},
+  {code:"PERNO.R38",name:"PERNO DYWI DRILL R38 - 500",cat:"PERNOS",unit:"ML"},
+  {code:"PERNO.R32",name:"PERNO DYWI DRILL R32 - 320",cat:"PERNOS",unit:"ML"},
+  {code:"PLACA.B25",name:"PLACA BAHE 25mm 200x200x8mm",cat:"PLACAS",unit:"UND"},
+  {code:"PLACA.B25.4.5",name:"PLACA BAHE 25mm 200x200x4.5mm",cat:"PLACAS",unit:"UND"},
+  {code:"PLACA.B25.4",name:"PLACA BAHE 25mm 200x200x4mm",cat:"PLACAS",unit:"UND"},
+  {code:"PLACA.B41",name:"PLACA BAHE 41mm 200x200x8mm",cat:"PLACAS",unit:"UND"},
+  {code:"PLACA.B32",name:"PLACA BAHE 32mm 200x200x8mm",cat:"PLACAS",unit:"UND"},
+  {code:"PLACA.R32",name:"PLACA R32mm 200x200x8mm",cat:"PLACAS",unit:"UND"},
+  {code:"PLACA.R38",name:"PLACA R38mm 200x200x8mm",cat:"PLACAS",unit:"UND"},
+  {code:"PLACA.SP.33",name:"PLACA SPIKE P33",cat:"PLACAS",unit:"UND"},
+  {code:"TUERCA.B25",name:"TUERCA BAHE 25mm",cat:"ACCESORIOS",unit:"UND"},
+  {code:"TUERCA.B32",name:"TUERCA BAHE 32mm",cat:"ACCESORIOS",unit:"UND"},
+  {code:"TUERCA.R32",name:"TUERCA R32",cat:"ACCESORIOS",unit:"UND"},
+  {code:"TUERCA.R38",name:"TUERCA R38",cat:"ACCESORIOS",unit:"UND"},
+  {code:"BROCA.R38",name:"BROCA R38",cat:"ACCESORIOS",unit:"UND"},
+  {code:"BROCA.R32",name:"BROCA R32",cat:"ACCESORIOS",unit:"UND"},
+  {code:"COPLE.R38",name:"COPLE R38",cat:"ACCESORIOS",unit:"UND"},
+  {code:"COPLE.R32",name:"COPLE R32",cat:"ACCESORIOS",unit:"UND"},
+  {code:"ACOPLE.B32",name:"ACOPLE BAHE 32mm",cat:"ACCESORIOS",unit:"UND"},
+  {code:"CABLE.14",name:"CABLE ACERO BOA D=14mm 9/16'",cat:"CABLES",unit:"ML"},
+  {code:"CABLE.18",name:"CABLE ACERO BOA D=18mm 11/16'",cat:"CABLES",unit:"ML"},
+  {code:"CABLE.19",name:"CABLE ACERO BOA D=19mm 3/4'",cat:"CABLES",unit:"ML"},
+  {code:"CABLE.12",name:"CABLE ACERO BOA D=12mm 1/2'",cat:"CABLES",unit:"ML"},
+  {code:"CABLE.22",name:"CABLE ACERO BOA D=22mm 7/8'",cat:"CABLES",unit:"ML"},
+  {code:"CABLE.6",name:"CABLE ACERO BOA D=6mm 1/4'",cat:"CABLES",unit:"ML"},
+  {code:"SUJE.12",name:"SUJETACABLES FORJET 12mm 1/2'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"SUJE.14",name:"SUJETACABLES FORJET 14mm 9/16'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"SUJE.15",name:"SUJETACABLES FORJET 16mm 5/8'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"SUJE.18",name:"SUJETACABLES FORJET 18mm 11/16'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"SUJE.19",name:"SUJETACABLES FORJET 19mm 3/4'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"SUJE.22",name:"SUJETACABLES FORJET 22mm 7/8'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"SUJE.6",name:"SUJETACABLES FORJET 6mm 1/4'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"GARRO.16",name:"GARROTA D=16mm 5/8'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"GA145.2m",name:"ANCLAJE GA-7001 TIPO II (14.5mm) L=2m",cat:"ANCLAJES",unit:"UND"},
+  {code:"GA145.3m",name:"ANCLAJE GA-7001 TIPO II (14.5mm) L=3m",cat:"ANCLAJES",unit:"UND"},
+  {code:"GA145.4m",name:"ANCLAJE GA-7001 TIPO II (14.5mm) L=4m",cat:"ANCLAJES",unit:"UND"},
+  {code:"GA105.2m",name:"ANCLAJE GA-7001 TIPO I (10.5mm) L=2m",cat:"ANCLAJES",unit:"UND"},
+  {code:"GA105.3m",name:"ANCLAJE GA-7001 TIPO I (10.5mm) L=3m",cat:"ANCLAJES",unit:"UND"},
+  {code:"C.T3",name:"CLIP T3",cat:"ACCESORIOS",unit:"UND"},
+  {code:"C.T2",name:"CLIP T2",cat:"ACCESORIOS",unit:"UND"},
+  {code:"CEM.V",name:"CEMENTO",cat:"CEMENTO",unit:"BLS"},
+  {code:"CANCAMO",name:"CANCAMOS 1' L=1.50M PARA LINEA DE VIDA",cat:"ACCESORIOS",unit:"UND"},
+  {code:"AGUA",name:"AGUA PARA OBRA",cat:"CONSUMIBLES",unit:"M3"},
+  {code:"ALAMBRE",name:"ALAMBRE GALVANIZADO",cat:"ACCESORIOS",unit:"KG"},
+  {code:"RATCHER",name:"MALLA RATCHER",cat:"MALLA",unit:"M2"},
+  {code:"SOGA",name:"SOGA",cat:"CONSUMIBLES",unit:"ML"},
+  {code:"BARRAS",name:"BARRAS DE ACERO 25MM L=2ML",cat:"PERNOS",unit:"UND"},
+  {code:"CONCRELISTO",name:"CONCRELISTO",cat:"CEMENTO",unit:"BLS"},
+  {code:"ACERO",name:"ACERO CORRUGADO fy=4200 kg/cm2",cat:"CEMENTO",unit:"KG"},
+  {code:"CENTRA.D25",name:"CENTRALIZADOR PVC D=25mm",cat:"ACCESORIOS",unit:"UND"},
+  {code:"CENTRA.D32",name:"CENTRALIZADOR PVC D=32mm",cat:"ACCESORIOS",unit:"UND"},
+  {code:"CENTRA.R32",name:"CENTRALIZADOR ESTRELLA R32",cat:"ACCESORIOS",unit:"UND"},
+  {code:"CENTRA.R38",name:"CENTRALIZADOR ESTRELLA R38",cat:"ACCESORIOS",unit:"UND"},
+  {code:"GRI.1",name:"GRILLETE 1'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"GRI.58",name:"GRILLETE 5/8'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"GRI.34",name:"GRILLETE 3/4'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"GRI.78",name:"GRILLETE 7/8'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"GRI.12",name:"GRILLETE 1/2'",cat:"ACCESORIOS",unit:"UND"},
+  {code:"T80.3",name:"MALLA TECCO G80/3",cat:"MALLA",unit:"M2"},
+  {code:"D80.3",name:"MALLA DELTAX G80/3",cat:"MALLA",unit:"M2"},
+];
+
+// ── Árbol Área → Sector → Frente ────────────────────────────
+const UBICACIONES={
+  '1000':{
+    '—':['—'],
+  },
+  '2000':{
+    'By Pass Sur':['By Pass Sur 01'],
+    'Tajo':['Tajo 04 Norte'],
+    'Zona 03':['Tajo 03 Norte'],
+  },
+  '3000':{
+    'Faja Overland':['FAJA OVERLAND ZONA A - A1','FAJA OVERLAND ZONA C','FAJA OVERLAND ZONA D'],
+    'Poza PC':['Poza PC 002'],
+  },
+  '4000':{
+    'VIA MAR II':['ZCM08 - ACTIVO 01','ZCM08 - ACTIVO 02','ZCM08 - PASIVO 01','ZCM08 - PASIVO 02','ZCM09','ZCM06','ZCM05','ZCM03','ZCM02','ZCM01'],
+    'Mantenimiento MAR II':['VM_M-10','VM_M-5','VM_M-4','VM_M-1','VM_M-16','VM_M-8','VM_M-6','VM_M-9','VM_M-13','VM_M-12','VM_M-7','VM_M-3'],
+  },
+  '5800':{
+    'Mantenimiento MAR II':['VM_M-2'],
+  },
+};
+
+function xorOrigen(filled){
+  const procEl=document.getElementById('eProcedencia');
+  const areaEl=document.getElementById('eArea');
+  const secEl=document.getElementById('eSector');
+  const frtEl=document.getElementById('eFrente');
+  const procLabel=document.getElementById('eProcLabel');
+  const ubicLabel=document.getElementById('eUbicLabel');
+  if(filled==='proc'){
+    const has=procEl.value!=='';
+    areaEl.disabled=has; secEl.disabled=true; frtEl.disabled=true;
+    if(has){areaEl.value='';secEl.innerHTML='<option value="">— Sector —</option>';frtEl.innerHTML='<option value="">— Frente —</option>';ubicLabel.classList.add('dim');}
+    else{ubicLabel.classList.remove('dim');}
+    procLabel.classList.remove('dim');
+  } else {
+    const has=areaEl.value!=='';
+    procEl.disabled=has;
+    if(has){procEl.value='';procLabel.classList.add('dim');}
+    else{procLabel.classList.remove('dim');}
+    ubicLabel.classList.remove('dim');
+  }
+  document.getElementById('eErrOrigen').classList.remove('show');
+}
+function updateESectores(){
+  const area=document.getElementById('eArea').value;
+  const secSel=document.getElementById('eSector');
+  const frtSel=document.getElementById('eFrente');
+  secSel.innerHTML='<option value="">— Sector —</option>';
+  frtSel.innerHTML='<option value="">— Frente —</option>';
+  secSel.disabled=!area; frtSel.disabled=true;
+  Object.keys(UBICACIONES[area]||{}).forEach(s=>{
+    const o=document.createElement('option'); o.value=s; o.textContent=s; secSel.appendChild(o);
+  });
+}
+function updateEFrentes(){
+  const area=document.getElementById('eArea').value;
+  const sector=document.getElementById('eSector').value;
+  const frtSel=document.getElementById('eFrente');
+  frtSel.innerHTML='<option value="">— Frente —</option>';
+  frtSel.disabled=!sector;
+  (UBICACIONES[area]?.[sector]||[]).forEach(f=>{
+    const o=document.createElement('option'); o.value=f; o.textContent=f; frtSel.appendChild(o);
+  });
+}
+
+function updateSectores(){
+  const area=document.getElementById('sArea').value;
+  const secSel=document.getElementById('sSector');
+  const frtSel=document.getElementById('sFrente');
+  secSel.innerHTML='<option value="">— Seleccionar sector —</option>';
+  frtSel.innerHTML='<option value="">— Primero selecciona un sector —</option>';
+  frtSel.disabled=true;
+  if(!area){secSel.disabled=true;return;}
+  secSel.disabled=false;
+  Object.keys(UBICACIONES[area]||{}).forEach(s=>{
+    const o=document.createElement('option'); o.value=s; o.textContent=s; secSel.appendChild(o);
+  });
+}
+
+function updateFrentes(){
+  const area=document.getElementById('sArea').value;
+  const sector=document.getElementById('sSector').value;
+  const frtSel=document.getElementById('sFrente');
+  frtSel.innerHTML='<option value="">— Seleccionar frente —</option>';
+  if(!sector){frtSel.disabled=true;return;}
+  frtSel.disabled=false;
+  (UBICACIONES[area]?.[sector]||[]).forEach(f=>{
+    frtSel.innerHTML+=`<option>${f}</option>`;
+  });
+  document.getElementById('hintFrente').style.display='none';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CONFIGURACIÓN – pega aquí la URL de tu Apps Script Web App
+// ══════════════════════════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-bqNe3CjRNMo_s8Qikxp8W7ZEsYqkmACECy007tQ5utTM9YqGnss8oinYmDits0TIZw/exec';
+
+// ── Estado ──────────────────────────────────────────────────
+const STORE_KEY='almacen_talud_v1';
+const QUEUE_KEY='almacen_sync_queue_v1';
+let selMat={e:null,s:null};
+let tab='e';
+
+function loadRegs(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||'[]');}catch(e){return [];}}
+function saveRegs(arr){localStorage.setItem(STORE_KEY,JSON.stringify(arr));}
+function loadQueue(){try{return JSON.parse(localStorage.getItem(QUEUE_KEY)||'[]');}catch(e){return [];}}
+function saveQueue(q){localStorage.setItem(QUEUE_KEY,JSON.stringify(q));}
+
+// ── Estado visual de sincronización ──────────────────────────
+function updateSyncStatus(){
+  const q=loadQueue();
+  const box=document.getElementById('syncStatusBox');
+  const icon=document.getElementById('syncStatusIcon');
+  const txt=document.getElementById('syncStatusTxt');
+  if(!box)return;
+  if(SCRIPT_URL==='TU_URL_AQUI'){
+    box.style.background='#fef9c3';box.style.borderColor='#ca8a04';
+    icon.textContent='⚙️';
+    txt.textContent='Falta configurar: pega la URL del Apps Script en el código del formulario.';
+    return;
+  }
+  if(!navigator.onLine){
+    box.style.background='#fff7ed';box.style.borderColor='#f59e0b';
+    icon.textContent='📴';
+    txt.textContent='Sin internet — registros guardados localmente'+(q.length?' ('+q.length+' pendientes de enviar)':'')+'.'
+  } else if(q.length>0){
+    box.style.background='#fefce8';box.style.borderColor='#eab308';
+    icon.textContent='⏳';
+    txt.textContent=q.length+' registro(s) en cola — enviando a Google Sheets…';
+    flushQueue();
+  } else {
+    box.style.background='#f0fdf4';box.style.borderColor='#86efac';
+    icon.textContent='✅';
+    txt.textContent='✔ Conectado — los registros se guardan en tiempo real en Google Sheets.';
+  }
+}
+
+async function sendToSheet(regs){
+  if(!SCRIPT_URL||SCRIPT_URL==='TU_URL_AQUI') return false;
+  try{
+    const res=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(regs),headers:{'Content-Type':'text/plain'}});
+    const data=await res.json();
+    return data.ok===true;
+  }catch(e){return false;}
+}
+
+async function flushQueue(){
+  const q=loadQueue();
+  if(!q.length||!navigator.onLine||SCRIPT_URL==='TU_URL_AQUI') return;
+  const ok=await sendToSheet(q);
+  if(ok){saveQueue([]);updateSyncStatus();}
+}
+
+window.addEventListener('online', ()=>{updateSyncStatus();setTimeout(flushQueue,1500);});
+window.addEventListener('offline', ()=>updateSyncStatus());
+function updateBadge(){
+  const n=loadRegs().length;
+  document.getElementById('badgeCount').textContent=n+' registro'+(n!==1?'s':'');
+}
+
+// ── Tabs ─────────────────────────────────────────────────────
+function goTab(t){
+  tab=t;
+  ['e','s','r'].forEach(x=>{
+    document.getElementById('p'+x.toUpperCase()).classList.toggle('hidden',x!==t);
+    document.getElementById('t'+x).className='tab'+(x===t?' active-'+t:'');
+  });
+  if(t==='r') renderRegs();
+}
+
+// ── Fecha/hora ───────────────────────────────────────────────
+function setNow(pre){
+  const now=new Date();
+  document.getElementById(pre+'Fecha').value=now.toISOString().split('T')[0];
+  document.getElementById(pre+'Hora').value=now.toTimeString().slice(0,5);
+}
+setNow('e'); setNow('s');
+
+// ── Buscador material ────────────────────────────────────────
+function filterMat(p){
+  const q=document.getElementById(p+'MatSearch').value.toLowerCase().trim();
+  const drop=document.getElementById(p+'MatDrop');
+  if(!q){drop.innerHTML='';drop.classList.remove('open');return;}
+  const res=MATS.filter(m=>m.code.toLowerCase().includes(q)||m.name.toLowerCase().includes(q)||m.cat.toLowerCase().includes(q)).slice(0,12);
+  if(!res.length){drop.innerHTML='<div style="padding:11px;color:#9ca3af;font-size:13px;text-align:center">Sin resultados</div>';drop.classList.add('open');return;}
+  drop.innerHTML=res.map(m=>`<div class="mat-item" onclick="pickMat('${p}','${m.code}')"><div class="mat-code">${m.code}</div><div class="mat-name">${m.name}</div><div class="mat-cat">${m.cat}</div></div>`).join('');
+  drop.classList.add('open');
+}
+function openDrop(p){if(document.getElementById(p+'MatSearch').value.trim())filterMat(p);}
+function pickMat(p,code){
+  const m=MATS.find(x=>x.code===code);
+  if(!m)return;
+  selMat[p]=m;
+  document.getElementById(p+'MatSearch').value='';
+  document.getElementById(p+'MatDrop').classList.remove('open');
+  document.getElementById(p+'SelCode').textContent=m.code;
+  document.getElementById(p+'SelName').textContent=m.name;
+  document.getElementById(p+'SelUnit').textContent='Unidad: '+m.unit;
+  document.getElementById(p+'Unidad').value=m.unit;
+  document.getElementById(p+'MatSel').classList.add('show');
+  document.getElementById(p+'ErrMat').classList.remove('show');
+}
+function clearMat(p){
+  selMat[p]=null;
+  document.getElementById(p+'Unidad').value='';
+  document.getElementById(p+'MatSel').classList.remove('show');
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.mat-wrap')) document.querySelectorAll('.mat-drop').forEach(d=>d.classList.remove('open'));
+});
+
+// ── Material manual ───────────────────────────────────────────
+function toggleMatManual(p){
+  document.getElementById(p+'MatManualWrap').style.display='block';
+  document.getElementById(p+'MatManualToggleWrap').style.display='none';
+  // hide buscador and clear selection
+  clearMat(p);
+  document.getElementById('m'+p.toUpperCase()+'E'+'MatSearch') // no-op guard
+  const search=document.getElementById(p+'MatSearch');
+  if(search){search.value='';search.closest('.mat-wrap').style.display='none';}
+  document.getElementById(p+'MatSel').classList.remove('show');
+  document.getElementById(p+'MatManualName').focus();
+}
+function cancelMatManual(p){
+  document.getElementById(p+'MatManualWrap').style.display='none';
+  document.getElementById(p+'MatManualToggleWrap').style.display='block';
+  const search=document.getElementById(p+'MatSearch');
+  if(search) search.closest('.mat-wrap').style.display='block';
+  // clear manual fields
+  ['MatManualName','MatManualCode','MatManualUnit'].forEach(f=>{
+    const el=document.getElementById(p+f); if(el) el.value='';
+  });
+}
+function isManualMat(p){
+  return document.getElementById(p+'MatManualWrap').style.display==='block';
+}
+
+
+function toggleOtroSolic(){
+  const v=document.getElementById('sSolic').value;
+  const w=document.getElementById('sOtroSolicWrap');
+  w.style.display=v==='__otro__'?'block':'none';
+  if(v==='__otro__') document.getElementById('sOtroSolic').focus();
+  else document.getElementById('sOtroSolic').value='';
+}
+function xorDocVale(filled){
+  const docEl=document.getElementById('eDoc');
+  const valeEl=document.getElementById('eVale');
+  const docLabel=document.getElementById('eDocLabel');
+  const valeLabel=document.getElementById('eValeLabel');
+  if(filled==='doc'){
+    const hasDoc=docEl.value.trim().length>0;
+    valeEl.disabled=hasDoc;
+    if(hasDoc){valeEl.value='';valeLabel.classList.add('dim');}
+    else{valeLabel.classList.remove('dim');}
+    docLabel.classList.remove('dim');
+    document.getElementById('valeOkE').classList.add('hidden');
+  } else {
+    const hasVale=valeEl.value.trim().length>0;
+    docEl.disabled=hasVale;
+    if(hasVale){docEl.value='';docLabel.classList.add('dim');}
+    else{docLabel.classList.remove('dim');}
+    valeLabel.classList.remove('dim');
+  }
+  // clear errors on both
+  document.getElementById('eErrDoc').classList.remove('show');
+  document.getElementById('eErrVale').classList.remove('show');
+  docEl.classList.remove('ferr');
+  valeEl.classList.remove('ferr');
+}
+
+function toggleOtroAut(){
+  const v=document.getElementById('sAutorizado').value;
+  const w=document.getElementById('sOtroAutWrap');
+  w.style.display=v==='__autotro__'?'block':'none';
+  if(v==='__autotro__') document.getElementById('sOtroAut').focus();
+  else document.getElementById('sOtroAut').value='';
+}
+function toggleOtroAutE(){
+  const v=document.getElementById('eAutorizado').value;
+  const w=document.getElementById('eOtroAutWrap');
+  w.style.display=v==='__eautotro__'?'block':'none';
+  if(v==='__eautotro__') document.getElementById('eOtroAut').focus();
+  else document.getElementById('eOtroAut').value='';
+}
+function checkVale(){
+  const v=document.getElementById('sVale').value.trim();
+  const ok=document.getElementById('valeOk');
+  if(v.length>=3){
+    ok.classList.remove('hidden');
+    document.getElementById('valeOkTxt').textContent='Vale "'+v+'" ingresado — verifica que coincida con el documento físico.';
+    document.getElementById('sErrVale').classList.remove('show');
+    document.getElementById('sVale').classList.remove('ferr');
+  } else {ok.classList.add('hidden');}
+}
+function checkValeE(){
+  const v=document.getElementById('eVale').value.trim();
+  const ok=document.getElementById('valeOkE');
+  if(v.length>=3){
+    ok.classList.remove('hidden');
+    document.getElementById('valeOkETxt').textContent='Vale "'+v+'" ingresado — verifica que coincida con el documento físico.';
+    document.getElementById('eErrVale').classList.remove('show');
+    document.getElementById('eVale').classList.remove('ferr');
+  } else {ok.classList.add('hidden');}
+}
+
+// ── Validación ───────────────────────────────────────────────
+function clrErr(){
+  document.querySelectorAll('.err').forEach(e=>e.classList.remove('show'));
+  document.querySelectorAll('.ferr').forEach(e=>e.classList.remove('ferr'));
+}
+function showErr(eid,fid){
+  document.getElementById(eid).classList.add('show');
+  if(fid) document.getElementById(fid).classList.add('ferr');
+}
+
+// ── Submit ───────────────────────────────────────────────────
+function submit(p){
+  clrErr();
+  let ok=true;
+  if(!selMat[p] && !isManualMat(p)){showErr(p+'ErrMat');ok=false;}
+  if(isManualMat(p)){
+    if(!document.getElementById(p+'MatManualName').value.trim()){showErr(p+'ErrManualName',p+'MatManualName');ok=false;}
+    if(!document.getElementById(p+'MatManualUnit').value.trim()){showErr(p+'ErrManualUnit',p+'MatManualUnit');ok=false;}
+  }
+  const cant=parseFloat(document.getElementById(p+'Cant').value);
+  if(!cant||cant<=0){showErr(p+'ErrCant',p+'Cant');ok=false;}
+  if(p==='e'){
+    const docVal=document.getElementById('eDoc').value.trim();
+    const valeVal=document.getElementById('eVale').value.trim();
+    if(!docVal&&!valeVal){showErr('eErrDoc','eDoc');showErr('eErrVale','eVale');ok=false;}
+    const procVal=document.getElementById('eProcedencia').value;
+    const areaVal=document.getElementById('eArea').value;
+    if(!procVal&&!areaVal){document.getElementById('eErrOrigen').classList.add('show');ok=false;}
+    if(!document.getElementById('eRecib').value){showErr('eErrRecib','eRecib');ok=false;}
+    const eAutVal=document.getElementById('eAutorizado').value;
+    const eAutManual=document.getElementById('eOtroAut').value.trim();
+    if(!eAutVal){showErr('eErrAut','eAutorizado');ok=false;}
+    else if(eAutVal==='__eautotro__'&&!eAutManual){showErr('eErrAut','eOtroAut');ok=false;}
+  } else {
+    if(!document.getElementById('sArea').value){showErr('sErrArea','sArea');ok=false;}
+    if(!document.getElementById('sSector').value){showErr('sErrSector','sSector');ok=false;}
+    if(!document.getElementById('sFrente').value){showErr('sErrFrente','sFrente');ok=false;}
+    const solicVal=document.getElementById('sSolic').value;
+    const solicManual=document.getElementById('sOtroSolic').value.trim();
+    if(!solicVal){showErr('sErrSolic','sSolic');ok=false;}
+    else if(solicVal==='__otro__'&&!solicManual){showErr('sErrSolic','sOtroSolic');ok=false;}
+    if(!document.getElementById('sVale').value.trim()){showErr('sErrVale','sVale');ok=false;}
+    const autVal=document.getElementById('sAutorizado').value;
+    const autManual=document.getElementById('sOtroAut').value.trim();
+    if(!autVal){showErr('sErrAut','sAutorizado');ok=false;}
+    else if(autVal==='__autotro__'&&!autManual){showErr('sErrAut','sOtroAut');ok=false;}
+  }
+  if(!ok)return;
+
+  const getMatField=(p,field)=>{
+    if(isManualMat(p)){
+      if(field==='code') return document.getElementById(p+'MatManualCode').value.trim()||'MANUAL';
+      if(field==='name') return document.getElementById(p+'MatManualName').value.trim();
+      if(field==='unit') return document.getElementById(p+'MatManualUnit').value.trim();
+    }
+    return selMat[p]?.[field]||'';
+  };
+  const ts=Date.now();
+  const getSolic=()=>document.getElementById('sSolic').value==='__otro__'?document.getElementById('sOtroSolic').value.trim():document.getElementById('sSolic').value;
+  const getAut=()=>document.getElementById('sAutorizado').value==='__autotro__'?document.getElementById('sOtroAut').value.trim():document.getElementById('sAutorizado').value;
+
+  const reg=p==='e'?{
+    id:ts, tipo:'ENTRADA',
+    fecha:document.getElementById('eFecha').value,
+    hora:document.getElementById('eHora').value,
+    codigo:getMatField('e','code'), material:getMatField('e','name'), unidad:getMatField('e','unit'),
+    cantidad:cant,
+    documento:document.getElementById('eDoc').value.trim(),
+    procedencia:document.getElementById('eProcedencia').value,
+    area:document.getElementById('eArea').value,
+    sector:document.getElementById('eSector').value,
+    frente:document.getElementById('eFrente').value,
+    recibido:document.getElementById('eRecib').value,
+    vale:document.getElementById('eVale').value.trim(),
+    autorizado:(document.getElementById('eAutorizado').value==='__eautotro__'?document.getElementById('eOtroAut').value.trim():document.getElementById('eAutorizado').value),
+    solicitante:'', entregado:'',
+    obs:document.getElementById('eObs').value.trim()
+  }:{
+    id:ts, tipo:'SALIDA',
+    fecha:document.getElementById('sFecha').value,
+    hora:document.getElementById('sHora').value,
+    codigo:getMatField('s','code'), material:getMatField('s','name'), unidad:getMatField('s','unit'),
+    cantidad:cant,
+    documento:'', procedencia:'', recibido:'',
+    area:document.getElementById('sArea').value,
+    sector:document.getElementById('sSector').value,
+    frente:document.getElementById('sFrente').value,
+    solicitante:getSolic(),
+    vale:document.getElementById('sVale').value.trim(),
+    autorizado:getAut(),
+    entregado:document.getElementById('sEntreg').value,
+    obs:document.getElementById('sObs').value.trim()
+  };
+
+  const arr=loadRegs();
+  arr.unshift(reg);
+  saveRegs(arr);
+  updateBadge();
+
+  // ── Sincronizar con Google Sheets ────────────────────────
+  if(SCRIPT_URL!=='TU_URL_AQUI'){
+    if(navigator.onLine){
+      sendToSheet([reg]).then(ok=>{
+        if(!ok){
+          // Si falla el envío directo, encolar
+          const q=loadQueue();q.push(reg);saveQueue(q);
+        }
+        updateSyncStatus();
+      });
+    } else {
+      // Sin internet: encolar para enviar después
+      const q=loadQueue();q.push(reg);saveQueue(q);
+      updateSyncStatus();
+    }
+  }
+
+  showModal(p,reg);
+}
+
+// ── Modal ─────────────────────────────────────────────────────
+function showModal(p,r){
+  const isE=p==='e';
+  document.getElementById('mIco').textContent=isE?'📦':'🚧';
+  document.getElementById('mIco').className='modal-ico '+(isE?'e':'s');
+  document.getElementById('mTitle').textContent=isE?'Entrada registrada':'Salida registrada';
+  document.getElementById('mSub').textContent=isE?'Material ingresado al almacén correctamente.':'Salida registrada correctamente.';
+  const lines=isE
+    ?`<b>Tipo:</b> ENTRADA<br><b>Fecha:</b> ${r.fecha} ${r.hora}<br><b>Material:</b> [${r.codigo}] ${r.material}<br><b>Cantidad:</b> ${r.cantidad} ${r.unidad}<br><b>Documento:</b> ${r.documento||r.vale}<br>${r.procedencia?`<b>Procedencia:</b> ${r.procedencia}`:`<b>Ubicación:</b> ${r.area} › ${r.sector} › ${r.frente}`}<br><b>Recibido por:</b> ${r.recibido}<br><b>Autorizado por:</b> ${r.autorizado}`
+    :`<b>Tipo:</b> SALIDA<br><b>Fecha:</b> ${r.fecha} ${r.hora}<br><b>Material:</b> [${r.codigo}] ${r.material}<br><b>Cantidad:</b> ${r.cantidad} ${r.unidad}<br><b>Ubicación:</b> ${r.area} › ${r.sector} › ${r.frente}<br><b>Solicitado por:</b> ${r.solicitante}<br><b>Vale N°:</b> ${r.vale}<br><b>Autorizado por:</b> ${r.autorizado}`;
+  document.getElementById('mSum').innerHTML=lines;
+  document.getElementById('modalBg').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modalBg').classList.remove('show');
+  resetForm(tab);
+}
+function resetForm(p){
+  clearMat(p);
+  cancelMatManual(p);
+  ['Cant','Doc','Recib','Obs'].forEach(f=>{const el=document.getElementById(p+f);if(el)el.value='';});
+  const ep=document.getElementById('eProcedencia');if(ep){ep.value='';ep.disabled=false;}
+  const eArea=document.getElementById('eArea');if(eArea){eArea.value='';eArea.disabled=false;}
+  const eSec=document.getElementById('eSector');if(eSec){eSec.innerHTML='<option value="">— Sector —</option>';eSec.disabled=true;}
+  const eFrt=document.getElementById('eFrente');if(eFrt){eFrt.innerHTML='<option value="">— Frente —</option>';eFrt.disabled=true;}
+  const epl=document.getElementById('eProcLabel');if(epl)epl.classList.remove('dim');
+  const eul=document.getElementById('eUbicLabel');if(eul)eul.classList.remove('dim');
+  document.getElementById('eErrOrigen').classList.remove('show');
+  const ev=document.getElementById('eVale');if(ev){ev.value='';ev.disabled=false;}
+  const edoc=document.getElementById('eDoc');if(edoc){edoc.value='';edoc.disabled=false;}
+  const edl=document.getElementById('eDocLabel');if(edl)edl.classList.remove('dim');
+  const evl=document.getElementById('eValeLabel');if(evl)evl.classList.remove('dim');
+  const ea=document.getElementById('eAutorizado');if(ea)ea.value='';
+  const eaw=document.getElementById('eOtroAutWrap');if(eaw)eaw.style.display='none';
+  const eoa=document.getElementById('eOtroAut');if(eoa)eoa.value='';
+  const voe=document.getElementById('valeOkE');if(voe)voe.classList.add('hidden');
+  const sa=document.getElementById('sArea');if(sa){sa.value='';updateSectores();}
+  const ss=document.getElementById('sSolic');if(ss)ss.value='';
+  const sw=document.getElementById('sOtroSolicWrap');if(sw)sw.style.display='none';
+  const os=document.getElementById('sOtroSolic');if(os)os.value='';
+  const sA=document.getElementById('sAutorizado');if(sA)sA.value='';
+  const aw=document.getElementById('sOtroAutWrap');if(aw)aw.style.display='none';
+  const oa=document.getElementById('sOtroAut');if(oa)oa.value='';
+  const sv=document.getElementById('sVale');if(sv)sv.value='';
+  const se=document.getElementById('sEntreg');if(se)se.value='';
+  const vo=document.getElementById('valeOk');if(vo)vo.classList.add('hidden');
+  setNow(p);
+  clrErr();
+}
+
+// ── Panel registros ───────────────────────────────────────────
+function renderRegs(){
+  const arr=loadRegs();
+  const el=document.getElementById('regList');
+  const diag=document.getElementById('diagText');
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    diag.textContent=raw===null
+      ?'⚠ Sin registros en este dispositivo.'
+      :'✅ '+JSON.parse(raw).length+' registro(s) guardado(s) en este dispositivo.';
+  }catch(e){diag.textContent='❌ Error: '+e.message;}
+  document.getElementById('regTitle').textContent='Movimientos ('+arr.length+')';
+  if(!arr.length){
+    el.innerHTML='<div class="empty">Sin registros aún.<br><br>⚠ Los registros solo se ven en el dispositivo donde se guardaron.</div>';
+    return;
+  }
+  el.innerHTML=arr.map(r=>`
+    <div class="reg-card ${r.tipo[0]}">
+      <div class="reg-top">
+        <span class="reg-tipo ${r.tipo[0]}">${r.tipo}</span>
+        <span class="reg-fecha">${r.fecha} ${r.hora}</span>
+      </div>
+      <div class="reg-mat"><span class="reg-cod">${r.codigo}</span>${r.material}</div>
+      <div class="reg-details">
+        <b>Cantidad:</b> ${r.cantidad} ${r.unidad}
+        ${r.documento?`&nbsp;·&nbsp;<b>Doc:</b> ${r.documento}`:''}
+        ${r.procedencia?`&nbsp;·&nbsp;<b>Procedencia:</b> ${r.procedencia}`:''}
+        ${r.recibido?`&nbsp;·&nbsp;<b>Recibió:</b> ${r.recibido}`:''}
+        ${r.area?`<br><b>Ubicación:</b> ${r.area} › ${r.sector} › ${r.frente}`:''}
+        ${r.solicitante?`&nbsp;·&nbsp;<b>Solicitó:</b> ${r.solicitante}`:''}
+        ${r.vale?`<br><b>🔏 Vale:</b> ${r.vale}&nbsp;·&nbsp;<b>Autorizado por:</b> ${r.autorizado}`:''}
+        ${r.obs?`<br><b>Obs:</b> ${r.obs}`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ── Exportar CSV ──────────────────────────────────────────────
+function exportCSV(){
+  const arr=loadRegs();
+  if(!arr.length){alert('No hay registros para exportar.');return;}
+  const cols=['TIPO','FECHA','HORA','CODIGO','MATERIAL','UNIDAD','CANTIDAD','DOCUMENTO','PROCEDENCIA','RECIBIDO_POR','AREA','SECTOR','FRENTE','SOLICITADO_POR','VALE_N','AUTORIZADO_POR','ENTREGADO_POR','OBSERVACIONES'];
+  const rows=arr.map(r=>[
+    r.tipo,r.fecha,r.hora,r.codigo,
+    '"'+r.material.replace(/"/g,'""')+'"',
+    r.unidad,r.cantidad,r.documento,r.procedencia,r.recibido,
+    r.area,r.sector,r.frente,r.solicitante,r.vale,r.autorizado,r.entregado,
+    '"'+(r.obs||'').replace(/"/g,'""')+'"'
+  ].join(','));
+  const csv='\uFEFF'+cols.join(',')+'\n'+rows.join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='kardex_movimientos_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+}
+
+// ── Init ──────────────────────────────────────────────────────
+updateBadge();
+updateSyncStatus();
+// Intentar vaciar cola al cargar si hay internet
+if(navigator.onLine) setTimeout(flushQueue, 2000);
+</script>
+</body>
+</html>
